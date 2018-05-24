@@ -29,6 +29,7 @@ import com.alibaba.android.vlayout.LayoutHelper;
 import com.alibaba.android.vlayout.RecyclablePagerAdapter;
 import com.alibaba.android.vlayout.VirtualLayoutManager;
 import com.alibaba.android.vlayout.VirtualLayoutManager.LayoutParams;
+import com.alibaba.android.vlayout.extend.PerformanceMonitor;
 import com.alibaba.android.vlayout.layout.ColumnLayoutHelper;
 import com.alibaba.android.vlayout.layout.FixLayoutHelper;
 import com.alibaba.android.vlayout.layout.FloatLayoutHelper;
@@ -56,6 +57,7 @@ import android.support.v4.widget.SwipeRefreshLayout.OnRefreshListener;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -117,26 +119,23 @@ public class VLayoutActivity extends Activity {
 
         final RecyclerView recyclerView = (RecyclerView) findViewById(R.id.main_view);
 
-        findViewById(R.id.jump).setOnClickListener(new View.OnClickListener() {
+        final VirtualLayoutManager layoutManager = new VirtualLayoutManager(this);
+        layoutManager.setPerformanceMonitor(new PerformanceMonitor() {
+
+            long start;
+            long end;
+
             @Override
-            public void onClick(View v) {
-                EditText position = (EditText) findViewById(R.id.position);
-                if (!TextUtils.isEmpty(position.getText())) {
-                    try {
-                        int pos = Integer.parseInt(position.getText().toString());
-                        recyclerView.scrollToPosition(pos);
-                    } catch (Exception e) {
-                        Log.e("VlayoutActivity", e.getMessage(), e);
-                    }
-                } else {
-                    recyclerView.requestLayout();
-                }
+            public void recordStart(String phase, View view) {
+                start = System.currentTimeMillis();
+            }
+
+            @Override
+            public void recordEnd(String phase, View view) {
+                end = System.currentTimeMillis();
+                Log.d("VLayoutActivity", view.getClass().getName() + " " + (end - start));
             }
         });
-
-
-        final VirtualLayoutManager layoutManager = new VirtualLayoutManager(this);
-
         recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int scrollState) {
@@ -632,6 +631,9 @@ public class VLayoutActivity extends Activity {
             // adapters.add(new SubAdapter(this, new GridLayoutHelper(4), 24));
         }
 
+        adapters.add(
+            new FooterAdapter(recyclerView, VLayoutActivity.this, new GridLayoutHelper(1), 1));
+
         delegateAdapter.setAdapters(adapters);
 
 
@@ -651,6 +653,26 @@ public class VLayoutActivity extends Activity {
                 //delegateAdapter.notifyDataSetChanged();
             }
         };
+
+        findViewById(R.id.jump).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EditText position = (EditText) findViewById(R.id.position);
+                if (!TextUtils.isEmpty(position.getText())) {
+                    try {
+                        int pos = Integer.parseInt(position.getText().toString());
+                        recyclerView.scrollToPosition(pos);
+                    } catch (Exception e) {
+                        Log.e("VlayoutActivity", e.getMessage(), e);
+                    }
+                } else {
+                    recyclerView.requestLayout();
+                }
+                //FooterAdapter footer = (FooterAdapter)adapters.get(adapters.size() - 1);
+                //footer.toggleFoot();
+            }
+        });
+
 
 
         mainHandler.postDelayed(trigger, 1000);
@@ -690,6 +712,82 @@ public class VLayoutActivity extends Activity {
                 }
             }
         });
+    }
+
+    static class FooterAdapter extends DelegateAdapter.Adapter<MainViewHolder> {
+
+        private RecyclerView mRecyclerView;
+
+        private Context mContext;
+
+        private LayoutHelper mLayoutHelper;
+
+        private LayoutParams mLayoutParams;
+        private int mCount = 0;
+
+        private boolean showFooter = false;
+
+        public FooterAdapter(RecyclerView recyclerView, Context context, LayoutHelper layoutHelper, int count) {
+            this(recyclerView, context, layoutHelper, count, new LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 300));
+        }
+
+        public FooterAdapter(RecyclerView recyclerView, Context context, LayoutHelper layoutHelper, int count, @NonNull LayoutParams layoutParams) {
+            this.mRecyclerView = recyclerView;
+            this.mContext = context;
+            this.mLayoutHelper = layoutHelper;
+            this.mCount = count;
+            this.mLayoutParams = layoutParams;
+        }
+
+        @Override
+        public int getItemViewType(int position) {
+            return 100;
+        }
+
+        @Override
+        public LayoutHelper onCreateLayoutHelper() {
+            return mLayoutHelper;
+        }
+
+        @Override
+        public MainViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
+            return new MainViewHolder(LayoutInflater.from(mContext).inflate(R.layout.item, parent, false));
+        }
+
+        @Override
+        public void onBindViewHolder(MainViewHolder holder, int position) {
+            LayoutParams lp = (LayoutParams) holder.itemView.getLayoutParams();
+            if (showFooter) {
+                lp.height = 300;
+            } else {
+                lp.height = 0;
+            }
+            holder.itemView.setLayoutParams(lp);
+        }
+
+
+        @Override
+        protected void onBindViewHolderWithOffset(MainViewHolder holder, int position, int offsetTotal) {
+            ((TextView) holder.itemView.findViewById(R.id.title)).setText(Integer.toString(offsetTotal));
+        }
+
+        @Override
+        public int getItemCount() {
+            return mCount;
+        }
+
+        public void toggleFoot() {
+            this.showFooter = !this.showFooter;
+            mRecyclerView.getAdapter().notifyItemChanged(205);
+            mRecyclerView.post(new Runnable() {
+                @Override
+                public void run() {
+                    mRecyclerView.scrollToPosition(205);
+                    mRecyclerView.requestLayout();
+                }
+            });
+        }
+
     }
 
     // RecyclableViewPager

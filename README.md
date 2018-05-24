@@ -2,6 +2,21 @@
 
 [中文文档](README-ch.md)
 
+## Projects of Tangram
+
+### Android
+
++ [Tangram-Android](https://github.com/alibaba/Tangram-Android)
++ [Virtualview-Android](https://github.com/alibaba/Virtualview-Android)
++ [vlayout](https://github.com/alibaba/vlayout)
++ [UltraViewPager](https://github.com/alibaba/UltraViewPager)
+
+### iOS
+
++ [Tangram-iOS](https://github.com/alibaba/Tangram-iOS)
++ [Virtualview-iOS](https://github.com/alibaba/VirtualView-iOS)
++ [LazyScrollView](https://github.com/alibaba/lazyscrollview)
+
 Project `vlayout` is a powerful LayoutManager extension for RecyclerView, it provides a group of layouts for RecyclerView. Make it able to handle a complicate situation when grid, list and other layouts in the same recyclerview.
 
 ## Design
@@ -27,11 +42,11 @@ By providing a custom LayoutManager to RecyclerView, VirtualLayout is able to la
 
 ### Import Library
 
-Please find the latest version(1.2.2 so far) in maven repository. The newest version has been upload to jcenter and MavenCentral, make sure you have added at least one of these repositories.
+Please find the latest version in [release notes](https://github.com/alibaba/vlayout/releases). The newest version has been upload to jcenter and MavenCentral, make sure you have added at least one of these repositories. As follow:
 
 For gradle:
 ``` gradle
-compile ('com.alibaba.android:vlayout:1.2.2@aar') {
+compile ('com.alibaba.android:vlayout:1.2.8@aar') {
 	transitive = true
 }
 ```
@@ -42,7 +57,7 @@ pom.xml
 <dependency>
   <groupId>com.alibaba.android</groupId>
   <artifactId>vlayout</artifactId>
-  <version>1.2.2</version>
+  <version>1.2.8</version>
   <type>aar</type>
 </dependency>
 ```
@@ -153,3 +168,9 @@ Before you open an issue or create a pull request, please read [Contributing Gui
 # LICENSE
 
 Vlayout is available under the MIT license.
+
+# WeChatGroup
+
+![](https://img.alicdn.com/tfs/TB11_2_kbSYBuNjSspiXXXNzpXa-167-167.png)
+
+Search `tangram_` or scan the QR code above to be invited in WeChat.

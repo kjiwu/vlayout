@@ -41,6 +41,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import com.alibaba.android.vlayout.VirtualLayoutManager.LayoutParams;
+
 /**
  * This class is used to expose layoutChunk method, should not be used in anywhere else
  * It's only a valid class technically and with no features/functions in it
@@ -1153,7 +1155,8 @@ class ExposeLinearLayoutManagerEx extends LinearLayoutManager {
             }
             recycleByLayoutStateExpose(recycler, layoutState);
         }
-        int remainingSpace = layoutState.mAvailable + layoutState.mExtra + recycleOffset;
+        int remainingSpace = layoutState.mAvailable + layoutState.mExtra + (
+            layoutState.mLayoutDirection == LayoutState.LAYOUT_START ? 0 : recycleOffset); //FIXME  opt here to fix bg and shake
         while (remainingSpace > 0 && layoutState.hasMore(state)) {
             layoutChunkResultCache.resetInternal();
             layoutChunk(recycler, state, layoutState, layoutChunkResultCache);
@@ -1736,11 +1739,22 @@ class ExposeLinearLayoutManagerEx extends LinearLayoutManager {
             if (mLayoutFromEnd) {
                 mCoordinate = mOrientationHelper.getDecoratedEnd(child) + computeAlignOffset(child, mLayoutFromEnd, true) +
                         mOrientationHelper.getTotalSpaceChange();
+                if (DEBUG) {
+                    Log.d(TAG, "1 mLayoutFromEnd " + mLayoutFromEnd + " mOrientationHelper.getDecoratedEnd(child) "
+                        + mOrientationHelper.getDecoratedEnd(child) + " computeAlignOffset(child, mLayoutFromEnd, true) " + computeAlignOffset(child, mLayoutFromEnd, true));
+                }
             } else {
                 mCoordinate = mOrientationHelper.getDecoratedStart(child) + computeAlignOffset(child, mLayoutFromEnd, true);
+                if (DEBUG) {
+                    Log.d(TAG, "2 mLayoutFromEnd " + mLayoutFromEnd + " mOrientationHelper.getDecoratedStart(child) "
+                        + mOrientationHelper.getDecoratedStart(child) + " computeAlignOffset(child, mLayoutFromEnd, true) " + computeAlignOffset(child, mLayoutFromEnd, true));
+                }
             }
 
             mPosition = getPosition(child);
+            if (DEBUG) {
+                Log.d(TAG, "position " + mPosition + " mCoordinate " + mCoordinate);
+            }
         }
     }
 

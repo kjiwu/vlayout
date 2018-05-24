@@ -67,6 +67,8 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
 
     private final SparseArray<Pair<AdapterDataObserver, Adapter>> mIndexAry = new SparseArray<>();
 
+    private long[] cantorReverse = new long[2];
+
     /**
      * Delegate Adapter merge multi sub adapters, default is thread-unsafe
      *
@@ -105,7 +107,7 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
         if (mHasConsistItemType) {
             Adapter adapter = mItemTypeAry.get(viewType);
             if (adapter != null) {
-                 return adapter.onCreateViewHolder(parent, viewType);
+                return adapter.onCreateViewHolder(parent, viewType);
             }
 
             return null;
@@ -113,13 +115,12 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
 
 
         // reverse Cantor Function
-        int w = (int) (Math.floor(Math.sqrt(8 * viewType + 1) - 1) / 2);
-        int t = (w * w + w) / 2;
+        Cantor.reverseCantor(viewType, cantorReverse);
 
-        int index = viewType - t;
-        int subItemType = w - index;
+        int index = (int)cantorReverse[1];
+        int subItemType = (int)cantorReverse[0];
 
-        Adapter adapter  = findAdapterByIndex(index);
+        Adapter adapter = findAdapterByIndex(index);
         if (adapter == null) {
             return null;
         }
@@ -137,6 +138,18 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
 
         pair.second.onBindViewHolder(holder, position - pair.first.mStartPosition);
         pair.second.onBindViewHolderWithOffset(holder, position - pair.first.mStartPosition, position);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public void onBindViewHolder(RecyclerView.ViewHolder holder, int position, List<Object> payloads) {
+        Pair<AdapterDataObserver, Adapter> pair = findAdapterByPosition(position);
+        if (pair == null) {
+            return;
+        }
+        pair.second.onBindViewHolder(holder, position - pair.first.mStartPosition, payloads);
+        pair.second.onBindViewHolderWithOffset(holder, position - pair.first.mStartPosition, position, payloads);
+
     }
 
     @Override
@@ -172,7 +185,7 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
 
         int index = p.first.mIndex;
 
-        return (int) getCantor(subItemType, index);
+        return (int) Cantor.getCantor(subItemType, index);
     }
 
 
@@ -194,7 +207,7 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
         /*
          * Now we have a pairing function problem, we use cantor pairing function for itemId.
          */
-        return getCantor(index, itemId);
+        return Cantor.getCantor(index, itemId);
     }
 
     @Override
@@ -208,7 +221,7 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
         super.onViewRecycled(holder);
 
         int position = holder.getPosition();
-        if (position > 0) {
+        if (position >= 0) {
             Pair<AdapterDataObserver, Adapter> pair = findAdapterByPosition(position);
             if (pair != null) {
                 pair.second.onViewRecycled(holder);
@@ -222,7 +235,7 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
     public void onViewAttachedToWindow(RecyclerView.ViewHolder holder) {
         super.onViewAttachedToWindow(holder);
         int position = holder.getPosition();
-        if (position > 0) {
+        if (position >= 0) {
             Pair<AdapterDataObserver, Adapter> pair = findAdapterByPosition(position);
             if (pair != null) {
                 pair.second.onViewAttachedToWindow(holder);
@@ -235,7 +248,7 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
     public void onViewDetachedFromWindow(RecyclerView.ViewHolder holder) {
         super.onViewDetachedFromWindow(holder);
         int position = holder.getPosition();
-        if (position > 0) {
+        if (position >= 0) {
             Pair<AdapterDataObserver, Adapter> pair = findAdapterByPosition(position);
             if (pair != null) {
                 pair.second.onViewDetachedFromWindow(holder);
@@ -414,12 +427,11 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
         mIndexAry.clear();
     }
 
-    public int getAdaptersCount(){
+    public int getAdaptersCount() {
         return mAdapters == null ? 0 : mAdapters.size();
     }
 
     /**
-     *
      * @param absoultePosition
      * @return the relative position in sub adapter by the absoulte position in DelegaterAdapter. Return -1 if no sub adapter founded.
      */
@@ -496,7 +508,7 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
             return mIndex;
         }
 
-        private boolean updateLayoutHelper(){
+        private boolean updateLayoutHelper() {
             if (mIndex < 0) {
                 return false;
             }
@@ -568,6 +580,14 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
             }
             notifyItemRangeChanged(mStartPosition + positionStart, itemCount);
         }
+
+        @Override
+        public void onItemRangeChanged(int positionStart, int itemCount, Object payload) {
+            if (!updateLayoutHelper()) {
+                return;
+            }
+            notifyItemRangeChanged(mStartPosition + positionStart, itemCount, payload);
+        }
     }
 
     /**
@@ -616,7 +636,7 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
 
         @Override
         public LayoutHelper onCreateLayoutHelper() {
-            return new SingleLayoutHelper();
+            return mLayoutHelper;
         }
 
         @Override
@@ -642,11 +662,10 @@ public class DelegateAdapter extends VirtualLayoutAdapter<RecyclerView.ViewHolde
         protected void onBindViewHolderWithOffset(VH holder, int position, int offsetTotal) {
 
         }
-    }
 
-
-    private static long getCantor(long k1, long k2) {
-        return (k1 + k2) * (k1 + k2 + 1) / 2 + k2;
+        protected void onBindViewHolderWithOffset(VH holder, int position, int offsetTotal, List<Object> payloads) {
+            onBindViewHolderWithOffset(holder, position, offsetTotal);
+        }
     }
 
 }
